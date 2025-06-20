@@ -1,0 +1,34 @@
+{
+  "name": "scriptvisualizer",
+  "version": "1.0.0",
+  "description": "Visualize the execution of BitcoinSV scripts as a stack of op_codes.",
+  "keywords": [
+    "Visualization",
+    "BitcoinSV",
+    "Scripts"
+  ],
+  "license": "ISC",
+  "author": "Yinan Zhou",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@bsv/sdk": "^1.6.0",
+    "double-ended-queue": "^2.1.0-0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/double-ended-queue": "^2.1.7",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^4.5.2",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5"
+  }
+}
