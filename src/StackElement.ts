@@ -2,7 +2,7 @@ import { OP } from "@bsv/sdk";
 import { OPCodeExplanation } from "./utils";
 
 export function getOPName(op: number) : string {
-    // OP[chunk.op] shows an error but it is not a bug, just the type checking mechinism overreacting.
+    // OP[op] shows an error but it is not a bug, just the type checking mechinism overreacting.
     // @ts-ignore
     if (op in OP) return OP[op]
     if (op < OP.OP_PUSHDATA1 && op > OP.OP_0) return `Pushdata${op.toString(16)}bytes`;
@@ -40,7 +40,6 @@ export class StackElement {
 
   getDisplayString() : string {
     switch (this.type) {
-      case "PendingPushdata":
       case "MainStackElement":
       case "AltStackElement":
         if (this.contentHex.length > 3) return (this.contentHex.length / 2).toString() + "bytes hex String";
@@ -49,6 +48,10 @@ export class StackElement {
         }
       case "PendingOP":
         return getOPName(parseInt(this.contentHex, 16));
+        break;
+      case "PendingPushdata":
+        return "Push " + (this.contentHex.length / 2).toString() + "bytes";
+        break;
     }
   }
 
