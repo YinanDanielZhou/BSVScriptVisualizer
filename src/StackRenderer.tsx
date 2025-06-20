@@ -13,20 +13,6 @@ interface StackRendererProps {
   focusedElement: StackElement | null;
 }
 
-
-
-  // // Whenever the pending stack element changes,
-  // // update the number of top stack elements that are used as its arguments
-  // // e.g. OP_ADD uses 2
-  // useEffect(() => {
-  //   if (pendingStackElement && pendingStackElement.type === "PendingOP") {
-  //     setNumStackElementsUsedByPendingOP(OPCodeArgumentCount[getOPName(parseInt(pendingStackElement.contentHex, 16))]);
-  //   } else {
-  //     setNumStackElementsUsedByPendingOP(0);
-  //   }
-  // }, [pendingStackElement]);
-
-
 export const StackRenderer: React.FC<StackRendererProps> = ({
   stack,
   pendingStackElement,

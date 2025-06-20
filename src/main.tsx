@@ -1,9 +1,9 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { StackVisualizer } from './StackVisualizer';
+import { ScriptExecutionVisualizer } from './ScriptExecutionVisualizer';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <StackVisualizer />
+    <ScriptExecutionVisualizer />
   </React.StrictMode>
 );
