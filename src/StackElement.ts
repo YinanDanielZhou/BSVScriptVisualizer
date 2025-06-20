@@ -43,9 +43,8 @@ export class StackElement {
       case "MainStackElement":
       case "AltStackElement":
         if (this.contentHex.length > 3) return (this.contentHex.length / 2).toString() + "bytes hex String";
-        else {
-          return parseInt(this.contentHex, 16).toString();
-        }
+        else if (this.contentHex.length === 0) return "OP_0";
+        else return parseInt(this.contentHex, 16).toString();
       case "PendingOP":
         return getOPName(parseInt(this.contentHex, 16));
         break;
@@ -58,8 +57,10 @@ export class StackElement {
   getDetailString() : string {
     switch (this.type) {
       case "PendingPushdata":
+        return "0x" + this.contentHex;
       case "MainStackElement":
       case "AltStackElement":
+        if (this.contentHex.length === 0) return OPCodeExplanation["OP_0"];
         return "0x" + this.contentHex;
       case "PendingOP":
         return "0x" + this.contentHex + "\n" + OPCodeExplanation[getOPName(parseInt(this.contentHex, 16))];

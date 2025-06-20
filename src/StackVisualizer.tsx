@@ -305,6 +305,7 @@ export const StackVisualizer: React.FC = () => {
               hoverTimeoutRef={hoverTimeoutRef}
               focusedElement={focusedElement}
             />
+            <h3>Main Stack</h3>
           </div>
 
           {/* AltStack (no controls, readonly) */}
@@ -328,6 +329,7 @@ export const StackVisualizer: React.FC = () => {
               hoverTimeoutRef={hoverTimeoutRef}
               focusedElement={focusedElement}
             />
+            <h3>Alt Stack</h3>
           </div>
       </div>
     </div>

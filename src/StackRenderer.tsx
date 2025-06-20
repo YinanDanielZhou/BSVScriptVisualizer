@@ -100,7 +100,7 @@ export const StackRenderer: React.FC<StackRendererProps> = ({
   const stackElements = useMemo(() => {
     return stack.map((numberArray) => {
       if (numberArray.length === 0) {
-        return new StackElement("00", "MainStackElement")
+        return new StackElement("", "MainStackElement")
       } else {
         return new StackElement(numberArray.map(byte => byte.toString(16).padStart(2, '0')).join(''), "MainStackElement")
       }
