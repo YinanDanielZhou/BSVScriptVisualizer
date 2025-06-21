@@ -415,3 +415,21 @@ export const OPCodeArgumentCount: { [key: string]: number } = {
 
   "OP_INVALIDOPCODE": 0
 }
+
+export function minBytesNeededToPushDataOfLength(dataLengthInBytes: number) : number {
+  if (dataLengthInBytes < 0) throw new Error("Data length cannot be negative");
+  // this function calculates the minimum number of bytes needed to push data of given bytes onto the stack
+  // To push (1~75 bytes) needs (1 byte for length, X bytes for data)
+  //      e.g 0x123456 turns into 0x03123456 
+  if (dataLengthInBytes < 76) return 1 + dataLengthInBytes;
+  // To push (76~255 bytes) needs (1 byte for OP_PUSHDATA1, 1 byte for length, X bytes for data)
+  //      e.g 0x[76 bytes of data] turns into 0x4c[1 byte for length][76 bytes of data]
+  if (dataLengthInBytes < 256) return 1 + 1 + dataLengthInBytes;
+  // To push (256~65535 bytes) needs (1 byte for OP_PUSHDATA2, 2 bytes for length, X bytes for data)
+  //      e.g 0x[256 bytes of data] turns into 0x4d[2 bytes for length][256 bytes of data]
+  if (dataLengthInBytes < 65536) return 1 + 2 + dataLengthInBytes;
+  // To push (65536~4294967295 bytes) needs (1 byte for OP_PUSHDATA4, 4 bytes for length, X bytes for data)
+  //      e.g 0x[65536 bytes of data] turns into 0x4e[4 bytes for length][65536 bytes of data]
+  if (dataLengthInBytes < 4294967296) return 1 + 4 + dataLengthInBytes;
+  throw new Error("Data length too long");
+}
