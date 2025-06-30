@@ -122,7 +122,7 @@ export const ScriptsInputPanel: React.FC<ScriptsInputPanelProps> = ({
       <div style={{ textAlign: 'center', marginTop: '20px'}}>
         {spendSimulation === null ? (
           <button
-            onClick={handleStartSimulation}
+            onClick={() => handleStartSimulation(lockingScriptHex, unlockingScriptHex)}
             style={{
               marginTop: '10px',
               padding: '10px 20px',
