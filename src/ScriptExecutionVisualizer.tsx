@@ -22,68 +22,6 @@ export const ScriptExecutionVisualizer: React.FC = () => {
 
   const [scriptHighlightRange, setScriptHighlightRange] = useState<{ start: number; end: number }>({start: 0, end: 0});
 
-  // state to track hovered element
-  const [hoveredElement, setHoveredElement] = useState<StackElement | null>(null);
-  const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // State to track clicked element
-  const [clickedElement, setClickedElement] = useState<StackElement | null>(null);
-
-  // Focused element is either hovered or clicked (from stack or pending)
-  const [focusedElement, setFocusedElement] = useState<StackElement | null>(null);
-
-
-  // Helper function to get pending element and highlight range (pure function)
-  const getPendingStackElementHelper = () => {
-    if (spendSimulation === null) { return null }
-
-    let currentScript = spendSimulation.context === 'UnlockingScript' ? spendSimulation.unlockingScript : spendSimulation.lockingScript
-    let currentProgramCounter = spendSimulation.programCounter;
-
-    if (spendSimulation.programCounter >= currentScript.chunks.length) {
-      // the current script's execution is done
-      if (spendSimulation.context === 'UnlockingScript') {
-        // move to locking script
-        currentScript = spendSimulation.lockingScript
-        currentProgramCounter = 0;
-      } else {
-        // the simulation is done, no more pending elements
-        return null
-      }
-    }
-
-    const operation = currentScript.chunks[currentProgramCounter]
-    if (operation.data) {
-      return new StackElement(operation.data.map(byte => byte.toString(16).padStart(2, '0')).join(''), "PendingPushdata");
-    } else {
-      return new StackElement(operation.op.toString(16), "PendingOP");
-    }
-  }
-
-  // Memoize the pending stack element result to maintain object identity
-  const pendingStackElement = useMemo(() => {
-    return getPendingStackElementHelper();
-  }, [spendSimulation?.programCounter, spendSimulation?.context]);
-
-
-  // Update focusedElement based on hover and click states
-  useEffect(() => {
-    if (hoveredElement) {
-      setFocusedElement(hoveredElement);
-    } else if (clickedElement) {
-      setFocusedElement(clickedElement);
-    } else {
-      setFocusedElement(null);
-    }
-  }, [clickedElement, hoveredElement]);
-
-  // Whenever the pending stack element changes, 
-  // update the focused element to either the pending element or null
-  useEffect(() => {
-    setHoveredElement(null);
-    setClickedElement(pendingStackElement);
-  }, [pendingStackElement])
-
 
   const handleStartSimulation = (lockingScriptHex: string, unlockingScriptHex: string) => {
     const newSpendSimulation = new Spend({
@@ -198,6 +136,68 @@ export const ScriptExecutionVisualizer: React.FC = () => {
       if: [...spendSimulation.ifStack]
     });
   }, [spendSimulation, advanceSimulation, scriptHighlightRange]);
+
+  // Helper function to get pending element and highlight range (pure function)
+  // The pending element is the next opcode to be executed in the spending simulation
+  const getPendingStackElementHelper = () => {
+    if (spendSimulation === null) { return null }
+
+    let currentScript = spendSimulation.context === 'UnlockingScript' ? spendSimulation.unlockingScript : spendSimulation.lockingScript
+    let currentProgramCounter = spendSimulation.programCounter;
+
+    if (spendSimulation.programCounter >= currentScript.chunks.length) {
+      // the current script's execution is done
+      if (spendSimulation.context === 'UnlockingScript') {
+        // move to locking script
+        currentScript = spendSimulation.lockingScript
+        currentProgramCounter = 0;
+      } else {
+        // the simulation is done, no more pending elements
+        return null
+      }
+    }
+
+    const operation = currentScript.chunks[currentProgramCounter]
+    if (operation.data) {
+      return new StackElement(operation.data.map(byte => byte.toString(16).padStart(2, '0')).join(''), "PendingPushdata");
+    } else {
+      return new StackElement(operation.op.toString(16), "PendingOP");
+    }
+  }
+
+  // Memoize the pending stack element result to maintain object identity
+  const pendingStackElement = useMemo(() => {
+    return getPendingStackElementHelper();
+  }, [spendSimulation?.programCounter, spendSimulation?.context]);
+
+  // state to track hovered element
+  const [hoveredElement, setHoveredElement] = useState<StackElement | null>(null);
+  const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // State to track clicked element
+  const [clickedElement, setClickedElement] = useState<StackElement | null>(null);
+
+  // Focused element is either hovered or clicked (from stack or pending)
+  const [focusedElement, setFocusedElement] = useState<StackElement | null>(null);
+
+
+  // Update focusedElement based on hover and click states
+  useEffect(() => {
+    if (hoveredElement) {
+      setFocusedElement(hoveredElement);
+    } else if (clickedElement) {
+      setFocusedElement(clickedElement);
+    } else {
+      setFocusedElement(null);
+    }
+  }, [clickedElement, hoveredElement]);
+
+  // Whenever the pending stack element changes, 
+  // update the focused element to either the pending element or null
+  useEffect(() => {
+    setHoveredElement(null);
+    setClickedElement(pendingStackElement);
+  }, [pendingStackElement])
 
 
   return (
