@@ -8,6 +8,12 @@ import { LockingScript, Script, Spend, UnlockingScript } from '@bsv/sdk';
 import { minBytesNeededToPushDataOfLength } from './utils';
 
 export const ScriptExecutionVisualizer: React.FC = () => {
+
+  const [unlockingScriptHex, setUnlockingScriptHex] = useState('');
+  const [lockingScriptHex, setLockingScriptHex] = useState('');
+
+  const [spendSimulation, setSpendSimulation] = useState<Spend | null>(null);
+
   const [stacks, setStacks] = useState<{
     main: number[][];
     alt: number[][];
@@ -18,8 +24,7 @@ export const ScriptExecutionVisualizer: React.FC = () => {
     if: []
   });
 
-  const [unlockingScriptHex, setUnlockingScriptHex] = useState('');
-  const [lockingScriptHex, setLockingScriptHex] = useState('');
+  const [scriptHighlightRange, setScriptHighlightRange] = useState<{ start: number; end: number }>({start: 0, end: 0});
 
   // state to track hovered element
   const [hoveredElement, setHoveredElement] = useState<StackElement | null>(null);
@@ -30,10 +35,6 @@ export const ScriptExecutionVisualizer: React.FC = () => {
 
   // Focused element is either hovered or clicked (from stack or pending)
   const [focusedElement, setFocusedElement] = useState<StackElement | null>(null);
-
-  const [spendSimulation, setSpendSimulation] = useState<Spend | null>(null);
-
-  const [scriptHighlightRange, setScriptHighlightRange] = useState<{ start: number; end: number }>({start: 0, end: 0});
 
 
   // Helper function to get pending element and highlight range (pure function)
@@ -168,10 +169,9 @@ export const ScriptExecutionVisualizer: React.FC = () => {
     });
   }, [spendSimulation, advanceSimulation, scriptHighlightRange]);
 
-  const handleAdvanceTenSteps = () => {
-    if (spendSimulation === null) {
-      return
-    }
+  const handleAdvanceTenSteps = useCallback(() => {
+    if (spendSimulation === null) return;
+    
     for (let i = 0; i < 10; i++) {
       advanceSimulation(spendSimulation, scriptHighlightRange);
     }
@@ -181,12 +181,10 @@ export const ScriptExecutionVisualizer: React.FC = () => {
       alt: [...spendSimulation.altStack],
       if: [...spendSimulation.ifStack]
     });
-  }
+  }, [spendSimulation, advanceSimulation, scriptHighlightRange]);
 
-  const handleAdvanceToNextComputation = () => {
-    if (spendSimulation === null) {
-      return
-    }
+  const handleAdvanceToNextComputation = useCallback(() => {
+    if (spendSimulation === null) return;
     let currentPendingElement = getPendingStackElementHelper();
     let isScriptExecuting;
     do {
@@ -202,7 +200,7 @@ export const ScriptExecutionVisualizer: React.FC = () => {
       alt: [...spendSimulation.altStack],
       if: [...spendSimulation.ifStack]
     });
-  }
+  }, [spendSimulation, advanceSimulation, scriptHighlightRange]);
 
 
   return (
