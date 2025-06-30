@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useMemo } from 'react';
+import React, { useRef, useState, useEffect, useMemo, useCallback } from 'react';
 import { StackElement } from './StackElement';
 import { StackRenderer } from './StackRenderer';
 import { PendingStackElementRenderer } from './PendingStackElementRenderer';
@@ -66,7 +66,7 @@ export const ScriptExecutionVisualizer: React.FC = () => {
   // Memoize the pending stack element result to maintain object identity
   const pendingStackElement = useMemo(() => {
     return getPendingStackElementHelper();
-  }, [spendSimulation?.context, spendSimulation?.programCounter])
+  }, [spendSimulation?.programCounter, spendSimulation?.context]);
 
 
   // Update focusedElement based on hover and click states
@@ -157,11 +157,8 @@ export const ScriptExecutionVisualizer: React.FC = () => {
     }
   }
 
-  const handleAdvanceOneStep = () => {
-    if (spendSimulation === null) {
-      return
-    }
-
+  const handleAdvanceOneStep = useCallback(() => {
+    if (spendSimulation === null) return;
     advanceSimulation(spendSimulation, scriptHighlightRange);
     // Force re-render by creating new array references - single state update
     setStacks({
@@ -169,7 +166,7 @@ export const ScriptExecutionVisualizer: React.FC = () => {
       alt: [...spendSimulation.altStack],
       if: [...spendSimulation.ifStack]
     });
-  };
+  }, [spendSimulation, advanceSimulation, scriptHighlightRange]);
 
   const handleAdvanceTenSteps = () => {
     if (spendSimulation === null) {
