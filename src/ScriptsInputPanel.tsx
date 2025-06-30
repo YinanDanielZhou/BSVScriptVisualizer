@@ -1,12 +1,8 @@
 import { Spend } from '@bsv/sdk';
-import React from 'react';
+import React, { useState } from 'react';
 
 interface ScriptsInputPanelProps {
-  unlockingScriptHex: string;
-  setUnlockingScriptHex: (value: string) => void;
-  lockingScriptHex: string;
-  setLockingScriptHex: (value: string) => void;
-  handleStartSimulation: () => void;
+  handleStartSimulation: (lockingScriptHex: string, unlockingScriptHex: string) => void;
   handleQuitSimulation: () => void;
   spendSimulation: Spend | null;
   highlightStart: number;
@@ -14,16 +10,15 @@ interface ScriptsInputPanelProps {
 }
 
 export const ScriptsInputPanel: React.FC<ScriptsInputPanelProps> = ({
-  unlockingScriptHex,
-  setUnlockingScriptHex,
-  lockingScriptHex,
-  setLockingScriptHex,
   handleStartSimulation,
   handleQuitSimulation,
   spendSimulation,
   highlightStart,
   highlightEnd,
 }) => {
+  const [unlockingScriptHex, setUnlockingScriptHex] = useState('');
+  const [lockingScriptHex, setLockingScriptHex] = useState('');
+
   const renderHighlightedText = (text: string, start?: number, end?: number) => {
     if (start === undefined || end === undefined || start < 0 || end > text.length || start >= end) {
       return text;

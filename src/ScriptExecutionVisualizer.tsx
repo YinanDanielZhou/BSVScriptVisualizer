@@ -8,10 +8,6 @@ import { LockingScript, Script, Spend, UnlockingScript } from '@bsv/sdk';
 import { minBytesNeededToPushDataOfLength } from './utils';
 
 export const ScriptExecutionVisualizer: React.FC = () => {
-
-  const [unlockingScriptHex, setUnlockingScriptHex] = useState('');
-  const [lockingScriptHex, setLockingScriptHex] = useState('');
-
   const [spendSimulation, setSpendSimulation] = useState<Spend | null>(null);
 
   const [stacks, setStacks] = useState<{
@@ -89,7 +85,7 @@ export const ScriptExecutionVisualizer: React.FC = () => {
   }, [pendingStackElement])
 
 
-  const handleStartSimulation = () => {
+  const handleStartSimulation = (lockingScriptHex: string, unlockingScriptHex: string) => {
     const newSpendSimulation = new Spend({
       sourceTXID: "mockTxID",
       sourceOutputIndex: 0,
@@ -130,7 +126,8 @@ export const ScriptExecutionVisualizer: React.FC = () => {
   }
 
   const resetSimulation = () => {
-    handleStartSimulation();
+    if (spendSimulation === null) return;
+    handleStartSimulation(spendSimulation.lockingScript.toHex(), spendSimulation.unlockingScript.toHex());
     // The stacks will be updated when the new simulation is created
   };
 
@@ -226,10 +223,6 @@ export const ScriptExecutionVisualizer: React.FC = () => {
         }}
       >
         <ScriptsInputPanel
-          unlockingScriptHex={unlockingScriptHex}
-          setUnlockingScriptHex={setUnlockingScriptHex}
-          lockingScriptHex={lockingScriptHex}
-          setLockingScriptHex={setLockingScriptHex}
           handleStartSimulation={handleStartSimulation}
           handleQuitSimulation={handleQuitSimulation}
           spendSimulation={spendSimulation}
