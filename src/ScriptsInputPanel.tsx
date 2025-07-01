@@ -16,8 +16,8 @@ export const ScriptsInputPanel: React.FC<ScriptsInputPanelProps> = ({
   highlightStart,
   highlightEnd,
 }) => {
-  const [unlockingScriptHex, setUnlockingScriptHex] = useState('');
-  const [lockingScriptHex, setLockingScriptHex] = useState('');
+  const [unlockingScriptHex, setUnlockingScriptHex] = useState('0b68656c6c6f20776f726c64');
+  const [lockingScriptHex, setLockingScriptHex] = useState('20b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde978a878877777');
 
   const renderHighlightedText = (text: string, start?: number, end?: number) => {
     if (start === undefined || end === undefined || start < 0 || end > text.length || start >= end) {

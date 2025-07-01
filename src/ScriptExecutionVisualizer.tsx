@@ -24,6 +24,7 @@ export const ScriptExecutionVisualizer: React.FC = () => {
   const [scriptHighlightRange, setScriptHighlightRange] = useState<{ start: number; end: number }>({start: 0, end: 0});
 
   const handleStartSimulation = (lockingScriptHex: string, unlockingScriptHex: string) => {
+    console.log("handleStartSimulation");
     const newSpendSimulation = new Spend({
       sourceTXID: "mockTxID",
       sourceOutputIndex: 0,
@@ -71,11 +72,14 @@ export const ScriptExecutionVisualizer: React.FC = () => {
 
   // Helper function to advance the simulation by one step
   const advanceSimulation = (spendSimulation: Spend, scriptRange: { start: number; end: number }) => {
+    console.log("advanceSimulation");
+    const newRange = {...scriptRange};
+
     try {
       let stepSuccessful = spendSimulation.step();
       if (!stepSuccessful) {
         console.log("Step failed");
-        return;
+        return newRange;
       };
     } catch (e) {
       console.log(e);
@@ -83,48 +87,52 @@ export const ScriptExecutionVisualizer: React.FC = () => {
 
     let currentScript = spendSimulation.context === 'UnlockingScript' ? spendSimulation.unlockingScript : spendSimulation.lockingScript
     let currentProgramCounter = spendSimulation.programCounter;
-
-
+    
     if (currentProgramCounter >= currentScript.chunks.length) {
       // the current script's execution is done
       if (spendSimulation.context === 'UnlockingScript') {
         // move to locking script
         currentScript = spendSimulation.lockingScript
         currentProgramCounter = 0;
-        scriptRange.start = 0;
-        scriptRange.end = 0;
+        newRange.start = 0;
+        newRange.end = 0;
       } else {
         // the simulation is done, no more pending elements
-        return;
+        return newRange;
       }
     }
     
     const nextOperation = currentScript.chunks[currentProgramCounter]
     if (nextOperation.data) {
-      scriptRange.start = scriptRange.end;
-      scriptRange.end = scriptRange.end + minBytesNeededToPushDataOfLength(nextOperation.data.length) * 2; // each byte is 2 characters long in hex string
+      newRange.start = newRange.end;
+      newRange.end = newRange.end + minBytesNeededToPushDataOfLength(nextOperation.data.length) * 2; // each byte is 2 characters long in hex string
     } else {
-      scriptRange.start = scriptRange.end;
-      scriptRange.end = scriptRange.end + 2;  // every OP code that does not push data is 2 characters long in hex string (1 byte)
+      newRange.start = newRange.end;
+      newRange.end = newRange.end + 2;  // every OP code that does not push data is 2 characters long in hex string (1 byte)
     }
+    return newRange;
   }
 
   const handleAdvanceOneStep = useCallback(() => {
+    console.log("handleAdvanceOneStep");
     if (spendSimulation === null) return;
-    advanceSimulation(spendSimulation, scriptHighlightRange);
+    const newRange = advanceSimulation(spendSimulation, scriptHighlightRange);
     // Force re-render by creating new array references - single state update
     setStacks({
       main: [...spendSimulation.stack],
       alt: [...spendSimulation.altStack],
       if: [...spendSimulation.ifStack]
     });
-  }, [spendSimulation, advanceSimulation, scriptHighlightRange]);
+    setScriptHighlightRange(newRange);
+  }, [spendSimulation, scriptHighlightRange]);
 
   const handleAdvanceTenSteps = useCallback(() => {
+    console.log("handleAdvanceTenSteps");
     if (spendSimulation === null) return;
-    
+
+    let currentHighlightRange = {...scriptHighlightRange};
     for (let i = 0; i < 10; i++) {
-      advanceSimulation(spendSimulation, scriptHighlightRange);
+      currentHighlightRange = advanceSimulation(spendSimulation, currentHighlightRange);
     }
     // Force re-render by creating new array references - single state update
     setStacks({
@@ -132,14 +140,17 @@ export const ScriptExecutionVisualizer: React.FC = () => {
       alt: [...spendSimulation.altStack],
       if: [...spendSimulation.ifStack]
     });
-  }, [spendSimulation, advanceSimulation, scriptHighlightRange]);
+    setScriptHighlightRange(currentHighlightRange);
+  }, [spendSimulation, scriptHighlightRange]);
 
   const handleAdvanceToNextComputation = useCallback(() => {
+    console.log("handleAdvanceToNextComputation");
     if (spendSimulation === null) return;
     let currentPendingElement = getPendingStackElementHelper();
     let isScriptExecuting;
+    let currentHighlightRange = {...scriptHighlightRange};
     do {
-      advanceSimulation(spendSimulation, scriptHighlightRange);
+      currentHighlightRange = advanceSimulation(spendSimulation, currentHighlightRange);
       isScriptExecuting = !spendSimulation.ifStack.includes(false);
       if (isScriptExecuting) {
         currentPendingElement = getPendingStackElementHelper();
@@ -151,11 +162,13 @@ export const ScriptExecutionVisualizer: React.FC = () => {
       alt: [...spendSimulation.altStack],
       if: [...spendSimulation.ifStack]
     });
-  }, [spendSimulation, advanceSimulation, scriptHighlightRange]);
+    setScriptHighlightRange(currentHighlightRange);
+  }, [spendSimulation, scriptHighlightRange]);
 
   // Helper function to get pending element
   // The pending element is the next opcode to be executed in the spending simulation
   const getPendingStackElementHelper = () => {
+    console.log("getPendingStackElementHelper");
     if (spendSimulation === null) { return null }
 
     let currentScript = spendSimulation.context === 'UnlockingScript' ? spendSimulation.unlockingScript : spendSimulation.lockingScript
@@ -183,6 +196,7 @@ export const ScriptExecutionVisualizer: React.FC = () => {
 
   // Memoize the pending stack element result to maintain object identity
   const pendingStackElement = useMemo(() => {
+    console.log("getPendingStackElement");
     return getPendingStackElementHelper();
   }, [spendSimulation?.programCounter, spendSimulation?.context]);
 
@@ -199,6 +213,7 @@ export const ScriptExecutionVisualizer: React.FC = () => {
 
   // Update focusedElement based on hover and click states
   useEffect(() => {
+    console.log("updateFocusedElement");
     if (hoveredElement) {
       setFocusedElement(hoveredElement);
     } else if (clickedElement) {
@@ -211,6 +226,7 @@ export const ScriptExecutionVisualizer: React.FC = () => {
   // Whenever the pending stack element changes, 
   // update the focused element to either the pending element or null
   useEffect(() => {
+    console.log("updateFocusedElementToPendingStackElement");
     setHoveredElement(null);
     setClickedElement(pendingStackElement);
   }, [pendingStackElement])
