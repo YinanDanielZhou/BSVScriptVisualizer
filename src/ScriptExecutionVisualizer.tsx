@@ -9,6 +9,7 @@ import { minBytesNeededToPushDataOfLength } from './utils';
 
 export const ScriptExecutionVisualizer: React.FC = () => {
   const [spendSimulation, setSpendSimulation] = useState<Spend | null>(null);
+  const [simulationCompleted, setSimulationCompleted] = useState<boolean>(false);
 
   const [stacks, setStacks] = useState<{
     main: number[][];
@@ -21,7 +22,6 @@ export const ScriptExecutionVisualizer: React.FC = () => {
   });
 
   const [scriptHighlightRange, setScriptHighlightRange] = useState<{ start: number; end: number }>({start: 0, end: 0});
-
 
   const handleStartSimulation = (lockingScriptHex: string, unlockingScriptHex: string) => {
     const newSpendSimulation = new Spend({
@@ -63,24 +63,40 @@ export const ScriptExecutionVisualizer: React.FC = () => {
     });
   }
 
-  const resetSimulation = () => {
+  const handleResetSimulation = () => {
     if (spendSimulation === null) return;
     handleStartSimulation(spendSimulation.lockingScript.toHex(), spendSimulation.unlockingScript.toHex());
     // The stacks will be updated when the new simulation is created
   };
 
+  // Helper function to advance the simulation by one step
   const advanceSimulation = (spendSimulation: Spend, scriptRange: { start: number; end: number }) => {
-    spendSimulation.step();
+    try {
+      let stepSuccessful = spendSimulation.step();
+      if (!stepSuccessful) {
+        console.log("Step failed");
+        return;
+      };
+    } catch (e) {
+      console.log(e);
+    }
 
     let currentScript = spendSimulation.context === 'UnlockingScript' ? spendSimulation.unlockingScript : spendSimulation.lockingScript
     let currentProgramCounter = spendSimulation.programCounter;
 
-    if (spendSimulation.context === 'UnlockingScript' && currentProgramCounter === spendSimulation.unlockingScript.chunks.length) {
-      // move to locking script
-      currentScript = spendSimulation.lockingScript
-      currentProgramCounter = 0;
-      scriptRange.start = 0;
-      scriptRange.end = 0;
+
+    if (currentProgramCounter >= currentScript.chunks.length) {
+      // the current script's execution is done
+      if (spendSimulation.context === 'UnlockingScript') {
+        // move to locking script
+        currentScript = spendSimulation.lockingScript
+        currentProgramCounter = 0;
+        scriptRange.start = 0;
+        scriptRange.end = 0;
+      } else {
+        // the simulation is done, no more pending elements
+        return;
+      }
     }
     
     const nextOperation = currentScript.chunks[currentProgramCounter]
@@ -137,7 +153,7 @@ export const ScriptExecutionVisualizer: React.FC = () => {
     });
   }, [spendSimulation, advanceSimulation, scriptHighlightRange]);
 
-  // Helper function to get pending element and highlight range (pure function)
+  // Helper function to get pending element
   // The pending element is the next opcode to be executed in the spending simulation
   const getPendingStackElementHelper = () => {
     if (spendSimulation === null) { return null }
@@ -260,7 +276,7 @@ export const ScriptExecutionVisualizer: React.FC = () => {
           <button onClick={handleAdvanceOneStep} style={{ marginRight: '10px' }}>Advance 1 Step</button>
           <button onClick={handleAdvanceTenSteps} style={{ marginRight: '10px' }}>Advance 10 Step</button>
           <button onClick={handleAdvanceToNextComputation} style={{ marginRight: '10px' }}>Advance to the Next Computation</button>
-          <button onClick={resetSimulation}>Reset Simulation</button>
+          <button onClick={handleResetSimulation}>Reset Simulation</button>
         </div>
         
         {pendingStackElement ? (
