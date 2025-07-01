@@ -7,9 +7,14 @@ import { InspectionPanel } from './InspectionPanel';
 import { LockingScript, Script, Spend, UnlockingScript } from '@bsv/sdk';
 import { minBytesNeededToPushDataOfLength } from './utils';
 
+// Number of steps to advance when the "Advance many Steps" button is clicked
+// must be a number greater than 0
+const multipleStepCount : number = 10;
+
 export const ScriptExecutionVisualizer: React.FC = () => {
   const [spendSimulation, setSpendSimulation] = useState<Spend | null>(null);
-  const [simulationCompleted, setSimulationCompleted] = useState<boolean>(false);
+  const [isSimulationRunning, setIsSimulationRunning] = useState<boolean>(false);
+  const [simulationStepsTaken, setSimulationStepsTaken] = useState<number>(0);
 
   const [stacks, setStacks] = useState<{
     main: number[][];
@@ -51,11 +56,14 @@ export const ScriptExecutionVisualizer: React.FC = () => {
       alt: [...newSpendSimulation.altStack],
       if: [...newSpendSimulation.ifStack]
     });
+    setIsSimulationRunning(true);
+    setSimulationStepsTaken(0);
   }
 
   const handleQuitSimulation = () => {
     setSpendSimulation(null);
-
+    setIsSimulationRunning(false);
+    setSimulationStepsTaken(0);
     setStacks({
       main: [],
       alt: [],
@@ -70,14 +78,15 @@ export const ScriptExecutionVisualizer: React.FC = () => {
   };
 
   // Helper function to advance the simulation by one step
-  const advanceSimulation = (spendSimulation: Spend, scriptRange: { start: number; end: number }) => {
-    const newRange = {...scriptRange};
+  const advanceSimulation = (spendSimulation: Spend, scriptRange: { start: number; end: number }, isSimulationCompleted: { status: boolean }) => {
 
     try {
       let stepSuccessful = spendSimulation.step();
       if (!stepSuccessful) {
         console.log("Step failed");
-        return newRange;
+        // a failed step implies the simulation is over
+        isSimulationCompleted.status = true;
+        return;
       };
     } catch (e) {
       console.log(e);
@@ -92,73 +101,147 @@ export const ScriptExecutionVisualizer: React.FC = () => {
         // move to locking script
         currentScript = spendSimulation.lockingScript
         currentProgramCounter = 0;
-        newRange.start = 0;
-        newRange.end = 0;
+        scriptRange.start = 0;
+        scriptRange.end = 0;
       } else {
-        // the simulation is done, no more pending elements
-        return newRange;
+        // the simulation is done
+        isSimulationCompleted.status = true;
+        return;
       }
     }
     
     const nextOperation = currentScript.chunks[currentProgramCounter]
     if (nextOperation.data) {
-      newRange.start = newRange.end;
-      newRange.end = newRange.end + minBytesNeededToPushDataOfLength(nextOperation.data.length) * 2; // each byte is 2 characters long in hex string
+      scriptRange.start = scriptRange.end;
+      scriptRange.end = scriptRange.end + minBytesNeededToPushDataOfLength(nextOperation.data.length) * 2; // each byte is 2 characters long in hex string
     } else {
-      newRange.start = newRange.end;
-      newRange.end = newRange.end + 2;  // every OP code that does not push data is 2 characters long in hex string (1 byte)
+      scriptRange.start = scriptRange.end;
+      scriptRange.end = scriptRange.end + 2;  // every OP code that does not push data is 2 characters long in hex string (1 byte)
     }
-    return newRange;
+    return;
   }
 
   const handleAdvanceOneStep = useCallback(() => {
     if (spendSimulation === null) return;
-    const newRange = advanceSimulation(spendSimulation, scriptHighlightRange);
-    // Force re-render by creating new array references - single state update
-    setStacks({
-      main: [...spendSimulation.stack],
-      alt: [...spendSimulation.altStack],
-      if: [...spendSimulation.ifStack]
-    });
-    setScriptHighlightRange(newRange);
-  }, [spendSimulation, scriptHighlightRange]);
-
-  const handleAdvanceTenSteps = useCallback(() => {
-    if (spendSimulation === null) return;
-
     let currentHighlightRange = {...scriptHighlightRange};
-    for (let i = 0; i < 10; i++) {
-      currentHighlightRange = advanceSimulation(spendSimulation, currentHighlightRange);
+    let isSimulationOver = { status: false };
+
+    advanceSimulation(spendSimulation, currentHighlightRange, isSimulationOver);
+
+    // Do rerendering
+    setSimulationStepsTaken(simulationStepsTaken + 1);
+    if (isSimulationOver.status) {
+      setIsSimulationRunning(false);
     }
-    // Force re-render by creating new array references - single state update
     setStacks({
       main: [...spendSimulation.stack],
       alt: [...spendSimulation.altStack],
       if: [...spendSimulation.ifStack]
     });
     setScriptHighlightRange(currentHighlightRange);
-  }, [spendSimulation, scriptHighlightRange]);
+  }, [spendSimulation, scriptHighlightRange, simulationStepsTaken]);
+
+  const handleAdvanceManySteps = useCallback((stepsToTake: number) => {
+    if (spendSimulation === null) return;
+    if (stepsToTake <= 0) return;
+
+    let currentHighlightRange = {...scriptHighlightRange};
+    let isSimulationOver = { status: false };
+    let stepsTaken;
+    for (stepsTaken = 0; stepsTaken < stepsToTake; stepsTaken++) {
+      advanceSimulation(spendSimulation, currentHighlightRange, isSimulationOver);
+      if (isSimulationOver.status) {
+        break;
+      }
+    }
+    // Do rerendering
+    setSimulationStepsTaken(simulationStepsTaken + stepsTaken);
+    if (isSimulationOver.status) { setIsSimulationRunning(false); }
+    setStacks({
+      main: [...spendSimulation.stack],
+      alt: [...spendSimulation.altStack],
+      if: [...spendSimulation.ifStack]
+    });
+    setScriptHighlightRange(currentHighlightRange);
+  }, [spendSimulation, scriptHighlightRange, simulationStepsTaken]);
 
   const handleAdvanceToNextComputation = useCallback(() => {
     if (spendSimulation === null) return;
+
     let currentPendingElement = getPendingStackElementHelper();
     let isScriptExecuting;
     let currentHighlightRange = {...scriptHighlightRange};
+    let isSimulationOver = { status: false };
+    let stepsTaken = 0;
     do {
-      currentHighlightRange = advanceSimulation(spendSimulation, currentHighlightRange);
+      advanceSimulation(spendSimulation, currentHighlightRange, isSimulationOver);
+      stepsTaken++;
+      if (isSimulationOver.status) { break; }
+
       isScriptExecuting = !spendSimulation.ifStack.includes(false);
       if (isScriptExecuting) {
+        // update the pending element only if the script is within a true IF branch
         currentPendingElement = getPendingStackElementHelper();
       }
     } while (!isScriptExecuting || (currentPendingElement && !currentPendingElement.triggersComputation()))
-    // Force re-render by creating new array references - single state update
+
+    // Do rerendering
+    setSimulationStepsTaken(simulationStepsTaken + stepsTaken);
+    if (isSimulationOver.status) { setIsSimulationRunning(false); }
     setStacks({
       main: [...spendSimulation.stack],
       alt: [...spendSimulation.altStack],
       if: [...spendSimulation.ifStack]
     });
     setScriptHighlightRange(currentHighlightRange);
-  }, [spendSimulation, scriptHighlightRange]);
+  }, [spendSimulation, scriptHighlightRange, simulationStepsTaken]);
+
+  const handleRevertOneStep = useCallback(() => {
+    if (spendSimulation === null) return;
+    if (simulationStepsTaken <= 0) return;
+
+    const newSpendSimulation = new Spend({
+      sourceTXID: "mockTxID",
+      sourceOutputIndex: 0,
+      sourceSatoshis: 0,
+      lockingScript: Script.fromHex(spendSimulation.lockingScript.toHex()) as LockingScript,
+      transactionVersion: 0,
+      otherInputs: [],
+      outputs: [],
+      unlockingScript: Script.fromHex(spendSimulation.unlockingScript.toHex()) as UnlockingScript,
+      inputSequence: 0,
+      inputIndex: 0,
+      lockTime: 0
+    })
+
+    let stepsToTake = simulationStepsTaken - 1;
+    let currentHighlightRange;
+    const firstOperation = newSpendSimulation.unlockingScript.chunks[0]
+    if (firstOperation.data) {
+      currentHighlightRange = {start: 0, end: minBytesNeededToPushDataOfLength(firstOperation.data.length) * 2}; // each byte is 2 characters long in hex string
+    } else {
+      currentHighlightRange = {start: 0, end: 2};  // every OP code that does not push data is 2 characters long in hex string (1 byte)
+    }
+    let isSimulationOver = { status: false };
+    let stepsTaken;
+    for (stepsTaken = 0; stepsTaken < stepsToTake; stepsTaken++) {
+      advanceSimulation(newSpendSimulation, currentHighlightRange, isSimulationOver);
+      if (isSimulationOver.status) {
+        break;
+      }
+    }
+
+    // Do rerendering
+    setSpendSimulation(newSpendSimulation);
+    setSimulationStepsTaken(stepsTaken);
+    setIsSimulationRunning(!isSimulationOver.status);
+    setStacks({
+      main: [...newSpendSimulation.stack],
+      alt: [...newSpendSimulation.altStack],
+      if: [...newSpendSimulation.ifStack]
+    });
+    setScriptHighlightRange(currentHighlightRange);
+  }, [spendSimulation, simulationStepsTaken]);
 
   // Helper function to get pending element
   // The pending element is the next opcode to be executed in the spending simulation
@@ -280,10 +363,15 @@ export const ScriptExecutionVisualizer: React.FC = () => {
             width: '100%',
           }}
         >
-          <button onClick={handleAdvanceOneStep} style={{ marginRight: '10px' }}>Advance 1 Step</button>
-          <button onClick={handleAdvanceTenSteps} style={{ marginRight: '10px' }}>Advance 10 Step</button>
-          <button onClick={handleAdvanceToNextComputation} style={{ marginRight: '10px' }}>Advance to the Next Computation</button>
+          <button onClick={handleAdvanceOneStep} style={{ marginRight: '10px' }} disabled={!isSimulationRunning}>Advance 1 Step</button>
+          <button onClick={() => handleAdvanceManySteps(multipleStepCount)} style={{ marginRight: '10px' }} disabled={!isSimulationRunning}>Advance {multipleStepCount} Steps</button>
+          <button onClick={handleAdvanceToNextComputation} style={{ marginRight: '10px' }} disabled={!isSimulationRunning}>Advance to the Next Computation</button>
+          <button onClick={handleRevertOneStep} style={{ marginRight: '10px' }} >Revert 1 Step</button>
           <button onClick={handleResetSimulation}>Reset Simulation</button>
+        </div>
+
+        <div style={{height: '10px'}}>
+          steps taken: {simulationStepsTaken}
         </div>
         
         {pendingStackElement ? (
@@ -329,7 +417,7 @@ export const ScriptExecutionVisualizer: React.FC = () => {
             <h3>Main Stack</h3>
           </div>
 
-          {/* AltStack (no controls, readonly) */}
+          {/* AltStack */}
           <div
             style={{
               width: '200px',
@@ -352,8 +440,9 @@ export const ScriptExecutionVisualizer: React.FC = () => {
             />
             <h3>Alt Stack</h3>
           </div>
+        </div>
       </div>
-    </div>
+      
 
       {/* Right Section */}
       <div
