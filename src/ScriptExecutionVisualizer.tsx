@@ -147,9 +147,10 @@ export const ScriptExecutionVisualizer: React.FC = () => {
 
     let currentHighlightRange = {...scriptHighlightRange};
     let isSimulationOver = { status: false };
-    let stepsTaken;
-    for (stepsTaken = 0; stepsTaken < stepsToTake; stepsTaken++) {
+    let stepsTaken = 0;
+    for (let i = 0; i < stepsToTake; i++) {
       advanceSimulation(spendSimulation, currentHighlightRange, isSimulationOver);
+      stepsTaken++;
       if (isSimulationOver.status) {
         break;
       }
@@ -313,7 +314,15 @@ export const ScriptExecutionVisualizer: React.FC = () => {
         flexDirection: 'row',
         height: '100vh',
         width: '100vw',
-        overflow: 'scroll'
+        margin: 0,
+        padding: 0,
+        boxSizing: 'border-box',
+        overflow: 'hidden',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
       }}
     >
       {/* Left Section */}
@@ -323,7 +332,7 @@ export const ScriptExecutionVisualizer: React.FC = () => {
           flexShrink: 0,
           flexGrow: 0,
           backgroundColor: '#f4f4f4',
-          padding: '20px',
+          padding: '15px',
           boxSizing: 'border-box',
           overflowY: 'auto',
         }}
@@ -347,6 +356,7 @@ export const ScriptExecutionVisualizer: React.FC = () => {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
+          boxSizing: 'border-box',
           overflow: 'hidden',
           position: 'relative',
         }}
@@ -368,10 +378,6 @@ export const ScriptExecutionVisualizer: React.FC = () => {
           <button onClick={handleAdvanceToNextComputation} style={{ marginRight: '10px' }} disabled={!isSimulationRunning}>Advance to the Next Computation</button>
           <button onClick={handleRevertOneStep} style={{ marginRight: '10px' }} >Revert 1 Step</button>
           <button onClick={handleResetSimulation}>Reset Simulation</button>
-        </div>
-
-        <div style={{height: '10px'}}>
-          steps taken: {simulationStepsTaken}
         </div>
         
         {pendingStackElement ? (
