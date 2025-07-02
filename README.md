@@ -2,6 +2,8 @@
 
 A React-based web application for visualizing the execution of BitcoinSV scripts as interactive stack operations. This tool helps developers understand how Bitcoin scripts work by providing a step-by-step visual representation of script execution with stack manipulation.
 
+![ScriptVisualizer Screenshot](assets/snapshot.png)
+
 ## What This Project Does
 
 ScriptVisualizer allows you to:
