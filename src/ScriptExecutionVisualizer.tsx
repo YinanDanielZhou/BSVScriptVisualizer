@@ -80,17 +80,14 @@ export const ScriptExecutionVisualizer: React.FC = () => {
   // Helper function to advance the simulation by one step
   const advanceSimulation = (spendSimulation: Spend, scriptRange: { start: number; end: number }, isSimulationCompleted: { status: boolean }) => {
 
-    try {
-      let stepSuccessful = spendSimulation.step();
-      if (!stepSuccessful) {
-        console.log("Step failed");
-        // a failed step implies the simulation is over
-        isSimulationCompleted.status = true;
-        return;
-      };
-    } catch (e) {
-      console.log(e);
-    }
+
+    let stepSuccessful = spendSimulation.step();
+    if (!stepSuccessful) {
+      console.log("Step failed");
+      // a failed step implies the simulation is over
+      isSimulationCompleted.status = true;
+      return;
+    };
 
     let currentScript = spendSimulation.context === 'UnlockingScript' ? spendSimulation.unlockingScript : spendSimulation.lockingScript
     let currentProgramCounter = spendSimulation.programCounter;
@@ -126,7 +123,11 @@ export const ScriptExecutionVisualizer: React.FC = () => {
     let currentHighlightRange = {...scriptHighlightRange};
     let isSimulationOver = { status: false };
 
-    advanceSimulation(spendSimulation, currentHighlightRange, isSimulationOver);
+    try {
+      advanceSimulation(spendSimulation, currentHighlightRange, isSimulationOver);
+    } catch (e) {
+      console.log(e);
+    }
 
     // Do rerendering
     setSimulationStepsTaken(simulationStepsTaken + 1);
@@ -148,13 +149,18 @@ export const ScriptExecutionVisualizer: React.FC = () => {
     let currentHighlightRange = {...scriptHighlightRange};
     let isSimulationOver = { status: false };
     let stepsTaken = 0;
-    for (let i = 0; i < stepsToTake; i++) {
-      advanceSimulation(spendSimulation, currentHighlightRange, isSimulationOver);
-      stepsTaken++;
-      if (isSimulationOver.status) {
-        break;
+    try {
+      for (let i = 0; i < stepsToTake; i++) {
+        advanceSimulation(spendSimulation, currentHighlightRange, isSimulationOver);
+        stepsTaken++;
+        if (isSimulationOver.status) {
+          break;
+        }
       }
+    } catch (e) {
+      console.log(e);
     }
+
     // Do rerendering
     setSimulationStepsTaken(simulationStepsTaken + stepsTaken);
     if (isSimulationOver.status) { setIsSimulationRunning(false); }
@@ -174,17 +180,21 @@ export const ScriptExecutionVisualizer: React.FC = () => {
     let currentHighlightRange = {...scriptHighlightRange};
     let isSimulationOver = { status: false };
     let stepsTaken = 0;
-    do {
-      advanceSimulation(spendSimulation, currentHighlightRange, isSimulationOver);
-      stepsTaken++;
-      if (isSimulationOver.status) { break; }
+    try {
+      do {
+        advanceSimulation(spendSimulation, currentHighlightRange, isSimulationOver);
+        stepsTaken++;
+        if (isSimulationOver.status) { break; }
 
-      isScriptExecuting = !spendSimulation.ifStack.includes(false);
-      if (isScriptExecuting) {
-        // update the pending element only if the script is within a true IF branch
-        currentPendingElement = getPendingStackElementHelper();
-      }
-    } while (!isScriptExecuting || (currentPendingElement && !currentPendingElement.triggersComputation()))
+        isScriptExecuting = !spendSimulation.ifStack.includes(false);
+        if (isScriptExecuting) {
+          // update the pending element only if the script is within a true IF branch
+          currentPendingElement = getPendingStackElementHelper();
+        }
+      } while (!isScriptExecuting || (currentPendingElement && !currentPendingElement.triggersComputation()))
+    } catch (e) {
+      console.log(e);
+    }
 
     // Do rerendering
     setSimulationStepsTaken(simulationStepsTaken + stepsTaken);
@@ -224,12 +234,17 @@ export const ScriptExecutionVisualizer: React.FC = () => {
       currentHighlightRange = {start: 0, end: 2};  // every OP code that does not push data is 2 characters long in hex string (1 byte)
     }
     let isSimulationOver = { status: false };
-    let stepsTaken;
-    for (stepsTaken = 0; stepsTaken < stepsToTake; stepsTaken++) {
-      advanceSimulation(newSpendSimulation, currentHighlightRange, isSimulationOver);
-      if (isSimulationOver.status) {
-        break;
+    let stepsTaken = 0;
+    try {
+      for (let i = 0; i < stepsToTake; i++) {
+        advanceSimulation(newSpendSimulation, currentHighlightRange, isSimulationOver);
+        stepsTaken++;
+        if (isSimulationOver.status) {
+          break;
+        }
       }
+    } catch (e) {
+      console.log(e);
     }
 
     // Do rerendering
