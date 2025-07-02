@@ -14,6 +14,10 @@ ScriptVisualizer allows you to:
 - Inspect detailed information about stack elements and OP codes
 - Track script execution progress and handle errors
 
+Note: 
+- If the locking script has OP_CHECKSIG or OP_CHECKMULTISIG, the simulation will fail (and should fail) because the rest of the transaction is mocked. 
+- The focus of this tool is to help people understand how other script logics work, such as the ones created by sCrypt smart contracts.
+
 The application uses the [@bsv/sdk](https://www.npmjs.com/package/@bsv/sdk) library to simulate actual Bitcoin script execution, providing an accurate representation of how scripts would behave on the Bitcoin network.
 
 ## Live Demo
