@@ -43,7 +43,7 @@ export const ScriptsInputPanel: React.FC<ScriptsInputPanelProps> = ({
 
   return (
     <>
-      <h3>Unlocking Script Input</h3>
+      <h3>Unlocking Script Input (hex)</h3>
       {spendSimulation === null ? (
         /* Editable textarea */
         <textarea
@@ -81,9 +81,7 @@ export const ScriptsInputPanel: React.FC<ScriptsInputPanelProps> = ({
       )}
 
 
-      <h3>Locking Script Input</h3>
-      
-
+      <h3>Locking Script Input (hex)</h3>
       {spendSimulation === null ? (
         /* Editable textarea */
         <textarea

@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useRef, useState, useEffect, useMemo, useCallback, use } from 'react';
 import { StackElement } from './StackElement';
 import { StackRenderer } from './StackRenderer';
 import { PendingStackElementRenderer } from './PendingStackElementRenderer';
@@ -15,6 +15,7 @@ export const ScriptExecutionVisualizer: React.FC = () => {
   const [spendSimulation, setSpendSimulation] = useState<Spend | null>(null);
   const [isSimulationRunning, setIsSimulationRunning] = useState<boolean>(false);
   const [simulationStepsTaken, setSimulationStepsTaken] = useState<number>(0);
+  const [simulationError, setSimulationError] = useState<string>("");
 
   const [stacks, setStacks] = useState<{
     main: number[][];
@@ -58,12 +59,14 @@ export const ScriptExecutionVisualizer: React.FC = () => {
     });
     setIsSimulationRunning(true);
     setSimulationStepsTaken(0);
+    setSimulationError("");
   }
 
   const handleQuitSimulation = () => {
     setSpendSimulation(null);
     setIsSimulationRunning(false);
     setSimulationStepsTaken(0);
+    setSimulationError("");
     setStacks({
       main: [],
       alt: [],
@@ -79,14 +82,11 @@ export const ScriptExecutionVisualizer: React.FC = () => {
 
   // Helper function to advance the simulation by one step
   const advanceSimulation = (spendSimulation: Spend, scriptRange: { start: number; end: number }, isSimulationCompleted: { status: boolean }) => {
-
-
     let stepSuccessful = spendSimulation.step();
     if (!stepSuccessful) {
-      console.log("Step failed");
       // a failed step implies the simulation is over
       isSimulationCompleted.status = true;
-      return;
+      throw new Error("Script execution failed");
     };
 
     let currentScript = spendSimulation.context === 'UnlockingScript' ? spendSimulation.unlockingScript : spendSimulation.lockingScript
@@ -125,12 +125,14 @@ export const ScriptExecutionVisualizer: React.FC = () => {
 
     try {
       advanceSimulation(spendSimulation, currentHighlightRange, isSimulationOver);
+      setSimulationStepsTaken(simulationStepsTaken + 1);    
     } catch (e) {
-      console.log(e);
+      // only interested in the error message description returned by spend.step(), which is before the "TXID" string
+      const end = (e as Error).message.indexOf("TXID")
+      setSimulationError(end === -1 ? (e as Error).message : (e as Error).message.slice(0, end));
     }
 
     // Do rerendering
-    setSimulationStepsTaken(simulationStepsTaken + 1);
     if (isSimulationOver.status) {
       setIsSimulationRunning(false);
     }
@@ -158,7 +160,9 @@ export const ScriptExecutionVisualizer: React.FC = () => {
         }
       }
     } catch (e) {
-      console.log(e);
+      // only interested in the error message description returned by spend.step(), which is before the "TXID" string
+      const end = (e as Error).message.indexOf("TXID")
+      setSimulationError(end === -1 ? (e as Error).message : (e as Error).message.slice(0, end));
     }
 
     // Do rerendering
@@ -193,7 +197,9 @@ export const ScriptExecutionVisualizer: React.FC = () => {
         }
       } while (!isScriptExecuting || (currentPendingElement && !currentPendingElement.triggersComputation()))
     } catch (e) {
-      console.log(e);
+      // only interested in the error message description returned by spend.step(), which is before the "TXID" string
+      const end = (e as Error).message.indexOf("TXID")
+      setSimulationError(end === -1 ? (e as Error).message : (e as Error).message.slice(0, end));
     }
 
     // Do rerendering
@@ -244,7 +250,9 @@ export const ScriptExecutionVisualizer: React.FC = () => {
         }
       }
     } catch (e) {
-      console.log(e);
+      // only interested in the error message description returned by spend.step(), which is before the "TXID" string
+      const end = (e as Error).message.indexOf("TXID")
+      setSimulationError(end === -1 ? (e as Error).message : (e as Error).message.slice(0, end));
     }
 
     // Do rerendering
@@ -257,6 +265,7 @@ export const ScriptExecutionVisualizer: React.FC = () => {
       if: [...newSpendSimulation.ifStack]
     });
     setScriptHighlightRange(currentHighlightRange);
+    setSimulationError("");
   }, [spendSimulation, simulationStepsTaken]);
 
   // Helper function to get pending element
@@ -320,6 +329,12 @@ export const ScriptExecutionVisualizer: React.FC = () => {
     setHoveredElement(null);
     setClickedElement(pendingStackElement);
   }, [pendingStackElement])
+
+  useEffect(() => {
+    if (simulationError !== "") {
+      setIsSimulationRunning(false);
+    }
+  }, [simulationError])
 
 
   return (
@@ -395,6 +410,10 @@ export const ScriptExecutionVisualizer: React.FC = () => {
           <button onClick={handleResetSimulation}>Reset Simulation</button>
         </div>
         
+        <div>
+          <p>Simulation Steps Taken: {simulationStepsTaken}</p>
+        </div>
+
         {pendingStackElement ? (
           <div>
             <h3>Next Op code to be executed:</h3>
@@ -481,6 +500,7 @@ export const ScriptExecutionVisualizer: React.FC = () => {
           spendSimulation={spendSimulation}
           stacks={stacks}
           focusedElement={focusedElement}
+          simulationError={simulationError}
         />
       </div>
     </div>

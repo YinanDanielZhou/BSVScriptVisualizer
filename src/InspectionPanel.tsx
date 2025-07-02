@@ -10,12 +10,14 @@ interface InspectionPanelProps {
     if: boolean[];
   };
   focusedElement: StackElement | null;
+  simulationError: string;
 }
 
 export const InspectionPanel: React.FC<InspectionPanelProps> = ({
   spendSimulation,
   stacks,
   focusedElement,
+  simulationError,
 }) => {
   return (
     <>
@@ -76,6 +78,16 @@ export const InspectionPanel: React.FC<InspectionPanelProps> = ({
         </div>
       ) : (
         <p>Hover over or click a stack element for info...</p>
+      )}
+
+      {simulationError ? (
+        <div style={{ border: '1px solid #aaa', padding: '10px', borderRadius: '8px', backgroundColor: '#fff' }}>
+          <h4>Simulation Error</h4>
+          <p><strong>Error:</strong></p>
+          <p style={{wordWrap: 'break-word'}}>{simulationError}</p>
+        </div>
+      ) : (
+        <p></p>
       )}
     </>
   );
