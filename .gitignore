@@ -1,0 +1,9 @@
+node_modules
+build
+dist
+.env
+*.log
+*.swp
+*.swo
+*.DS_Store
+npm-debug.log
