@@ -16,6 +16,10 @@ ScriptVisualizer allows you to:
 
 The application uses the [@bsv/sdk](https://www.npmjs.com/package/@bsv/sdk) library to simulate actual Bitcoin script execution, providing an accurate representation of how scripts would behave on the Bitcoin network.
 
+## Live Demo
+
+Try the live demo at: [this github page](https://yinandanielzhou.github.io/BSVScriptVisualizer/)
+
 ## Project Structure
 
 ### Core Files
