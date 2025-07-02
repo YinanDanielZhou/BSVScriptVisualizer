@@ -116,7 +116,6 @@ The application comes with default example scripts:
 - **TypeScript** - Type safety
 - **Vite** - Build tool and development server
 - **@bsv/sdk** - Bitcoin SV script execution engine
-- **double-ended-queue** - Efficient queue data structure
 
 ## License
 
