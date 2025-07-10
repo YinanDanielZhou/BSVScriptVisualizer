@@ -409,13 +409,13 @@ export const ScriptExecutionVisualizer: React.FC = () => {
           <button onClick={handleRevertOneStep} style={{ marginRight: '10px' }} >Revert 1 Step</button>
           <button onClick={handleResetSimulation}>Reset Simulation</button>
         </div>
-        
+{/*         
         <div>
           <p>Simulation Steps Taken: {simulationStepsTaken}</p>
-        </div>
+        </div> */}
 
         {pendingStackElement ? (
-          <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <h3>Next Op code to be executed:</h3>
             <PendingStackElementRenderer
               pendingStackElement={pendingStackElement}

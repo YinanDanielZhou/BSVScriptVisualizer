@@ -97,7 +97,7 @@ export const StackRenderer: React.FC<StackRendererProps> = ({
     const total = stackElements.length;
     // The maximum number of stack elements to show before we start hiding
     // must be a multiple of 10; otherwise the calculation later may not work correctly
-    const stackLengthThreshold = 40 
+    const stackLengthThreshold = 30 
   
     let depthDisplayOffset = 0;
     const numArgsToPendingOP = pendingStackElement ? OPCodeArgumentCount[getOPName(parseInt(pendingStackElement.contentHex, 16))] : 0;
