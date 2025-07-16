@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Spend } from '@bsv/sdk';
 import { StackElement } from './StackElement';
 
@@ -20,7 +21,7 @@ export const InspectionPanel: React.FC<InspectionPanelProps> = ({
   simulationError,
 }) => {
   return (
-    <>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
       {spendSimulation === null ? (
          <p>Need a unlocking script and a locking script for a simulation</p>
       ) : (
@@ -89,6 +90,33 @@ export const InspectionPanel: React.FC<InspectionPanelProps> = ({
       ) : (
         <p></p>
       )}
-    </>
+
+      {/* Spacer to push navigation link to bottom */}
+      <div style={{ flex: 1 }}></div>
+
+      {/* Navigation link fixed at the very bottom */}
+      <div style={{
+        position: 'absolute',
+        bottom: '20px',
+        left: '20px',
+        right: '20px',
+        textAlign: 'center'
+      }}>
+        <Link to="/HexToJson" style={{
+          display: 'inline-block',
+          padding: '12px 20px',
+          backgroundColor: '#2196f3',
+          color: 'white',
+          textDecoration: 'none',
+          borderRadius: '5px',
+          fontSize: '14px',
+          fontWeight: 'bold',
+          width: '100%',
+          boxSizing: 'border-box'
+        }}>
+          Hex Visualizers →
+        </Link>
+      </div>
+    </div>
   );
 };

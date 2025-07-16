@@ -30,6 +30,7 @@ export const ScriptExecutionVisualizer: React.FC = () => {
   const [scriptHighlightRange, setScriptHighlightRange] = useState<{ start: number; end: number }>({start: 0, end: 0});
 
   const handleStartSimulation = (lockingScriptHex: string, unlockingScriptHex: string) => {
+
     const newSpendSimulation = new Spend({
       sourceTXID: "mockTxID",
       sourceOutputIndex: 0,
@@ -76,6 +77,7 @@ export const ScriptExecutionVisualizer: React.FC = () => {
 
   const handleResetSimulation = () => {
     if (spendSimulation === null) return;
+    spendSimulation.reset();
     handleStartSimulation(spendSimulation.lockingScript.toHex(), spendSimulation.unlockingScript.toHex());
     // The stacks will be updated when the new simulation is created
   };
