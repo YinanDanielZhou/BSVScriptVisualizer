@@ -1,8 +1,9 @@
-import { Spend } from '@bsv/sdk';
+import { LockingScript, Script, Spend, Transaction, UnlockingScript } from '@bsv/sdk';
 import React, { useState } from 'react';
+import { getRawTransactionHex } from './WocConnector';
 
 interface ScriptsInputPanelProps {
-  handleStartSimulation: (lockingScriptHex: string, unlockingScriptHex: string) => void;
+  handleStartSimulation: (newSpendSimulation: Spend) => void;
   handleQuitSimulation: () => void;
   spendSimulation: Spend | null;
   highlightStart: number;
@@ -16,8 +17,10 @@ export const ScriptsInputPanel: React.FC<ScriptsInputPanelProps> = ({
   highlightStart,
   highlightEnd,
 }) => {
-  const [unlockingScriptHex, setUnlockingScriptHex] = useState('0b68656c6c6f20776f726c64');
-  const [lockingScriptHex, setLockingScriptHex] = useState('20b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde978a878877777');
+  const [unlockingScriptHex, setUnlockingScriptHex] = useState('');
+  const [lockingScriptHex, setLockingScriptHex] = useState('');
+  const [txRawHex, setTxRawHex] = useState<string>('');
+  const [txInputIndex, setTxInputIndex] = useState<number>(0);
 
   const renderHighlightedText = (text: string, start?: number, end?: number) => {
     if (start === undefined || end === undefined || start < 0 || end > text.length || start >= end) {
@@ -39,7 +42,7 @@ export const ScriptsInputPanel: React.FC<ScriptsInputPanelProps> = ({
     );
   };
 
-  const bothScriptsEntered = lockingScriptHex !== '' && unlockingScriptHex !== '';
+  const bothScriptsEntered = lockingScriptHex !== '' && (unlockingScriptHex !== '' || txRawHex !== '');
 
   return (
     <>
@@ -120,7 +123,64 @@ export const ScriptsInputPanel: React.FC<ScriptsInputPanelProps> = ({
       <div style={{ textAlign: 'center', marginTop: '20px'}}>
         {spendSimulation === null ? (
           <button
-            onClick={() => handleStartSimulation(lockingScriptHex, unlockingScriptHex)}
+            onClick={async () => {
+              if (txRawHex === "") {
+                const mockSpendSimulation = new Spend({
+                  sourceTXID: "0000000000000000000000000000000000000000000000000000000000000000",
+                  sourceOutputIndex: 0,
+                  sourceSatoshis: 1,
+                  lockingScript: LockingScript.fromHex(lockingScriptHex),
+                  transactionVersion: 1,
+                  otherInputs: [],
+                  outputs: [],
+                  unlockingScript: UnlockingScript.fromHex(unlockingScriptHex),
+                  inputSequence: 0xffffffff,  // this need to be changed to the correct value for ChECKSIG to work
+                  inputIndex: 0,
+                  lockTime: 0
+                })
+
+                try {
+                  console.log(mockSpendSimulation.validate())
+                  mockSpendSimulation.reset()
+                } catch {
+                  console.error("failed to validate")
+                }
+
+                setLockingScriptHex(mockSpendSimulation.lockingScript.toHex())
+                setUnlockingScriptHex(mockSpendSimulation.unlockingScript.toHex())
+                handleStartSimulation(mockSpendSimulation)
+              } else {
+                const tx = Transaction.fromHex(txRawHex);
+                const inputIndex = txInputIndex
+                const sourceTXID = tx.inputs[inputIndex].sourceTXID!
+                const sourceOutputIndex = tx.inputs[inputIndex].sourceOutputIndex
+                // const sourceTransaction = Transaction.fromHex(await getRawTransactionHex(sourceTXID))
+
+                const newSpendSimulation = new Spend({
+                      sourceTXID: sourceTXID,
+                      sourceOutputIndex: sourceOutputIndex,
+                      sourceSatoshis: 1,   // this need to be changed to the correct value for ChECKSIG to work
+                      lockingScript: LockingScript.fromHex(lockingScriptHex),
+                      transactionVersion: tx.version,
+                      otherInputs: tx.inputs.slice(0, inputIndex).concat(tx.inputs.slice(inputIndex + 1)),
+                      outputs: tx.outputs,
+                      unlockingScript: tx.inputs[inputIndex].unlockingScript!,
+                      inputSequence: tx.inputs[inputIndex].sequence!,
+                      inputIndex: inputIndex,
+                      lockTime: tx.lockTime
+                })
+
+                try {
+                  console.log(newSpendSimulation.validate())
+                  newSpendSimulation.reset()
+                } catch {
+                  console.error("failed to validate")
+                }
+                setLockingScriptHex(newSpendSimulation.lockingScript.toHex())
+                setUnlockingScriptHex(newSpendSimulation.unlockingScript.toHex())
+                handleStartSimulation(newSpendSimulation)
+              }
+            }}
             style={{
               marginTop: '10px',
               padding: '10px 20px',
@@ -171,6 +231,28 @@ export const ScriptsInputPanel: React.FC<ScriptsInputPanelProps> = ({
             Quit Simulation
           </button>
         )}
+      </div>
+
+      <h3>Tx Raw Hex Input</h3>
+      <textarea
+        value={txRawHex}
+        onChange={(e) => {setTxRawHex(e.target.value)}}
+        rows={10}
+        style={{ width: '100%', resize: 'vertical' }}
+        placeholder="Enter transaction raw hex..."
+      />
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px' }}>
+        <h3>Input Index</h3>
+        <input
+          type="number"
+          value={txInputIndex}
+          onChange={(e) => {
+            setTxInputIndex(Number(e.target.value))
+          }}
+          min="0"
+          style={{ width: '100px', fontSize: '16px', padding: '5px' }}
+          placeholder="The input index to simulate spending."
+        />
       </div>
     </>
   );

@@ -27,7 +27,8 @@
     "@uiw/react-json-view": "^2.0.0-alpha.32",
     "@mui/icons-material": "^5.15.0",
     "@mui/material": "^5.15.0",
-    "@mui/system": "^5.15.0"
+    "@mui/system": "^5.15.0",
+    "axios": "^1.4.0"
   },
   "devDependencies": {
     "@types/react": "^19.1.8",

@@ -9,7 +9,8 @@ import { minBytesNeededToPushDataOfLength } from './utils';
 
 // Number of steps to advance when the "Advance many Steps" button is clicked
 // must be a number greater than 0
-const multipleStepCount : number = 10;
+const largeStepCount : number = 100;
+const mediumStepCount : number = 10;
 
 export const ScriptExecutionVisualizer: React.FC = () => {
   const [spendSimulation, setSpendSimulation] = useState<Spend | null>(null);
@@ -29,21 +30,7 @@ export const ScriptExecutionVisualizer: React.FC = () => {
 
   const [scriptHighlightRange, setScriptHighlightRange] = useState<{ start: number; end: number }>({start: 0, end: 0});
 
-  const handleStartSimulation = (lockingScriptHex: string, unlockingScriptHex: string) => {
-
-    const newSpendSimulation = new Spend({
-      sourceTXID: "mockTxID",
-      sourceOutputIndex: 0,
-      sourceSatoshis: 0,
-      lockingScript: Script.fromHex(lockingScriptHex) as LockingScript,
-      transactionVersion: 0,
-      otherInputs: [],
-      outputs: [],
-      unlockingScript: Script.fromHex(unlockingScriptHex) as UnlockingScript,
-      inputSequence: 0,
-      inputIndex: 0,
-      lockTime: 0
-    })
+  const handleStartSimulation = (newSpendSimulation: Spend) => {
 
     setSpendSimulation(newSpendSimulation);
     const firstOperation = newSpendSimulation.unlockingScript.chunks[0]
@@ -78,7 +65,7 @@ export const ScriptExecutionVisualizer: React.FC = () => {
   const handleResetSimulation = () => {
     if (spendSimulation === null) return;
     spendSimulation.reset();
-    handleStartSimulation(spendSimulation.lockingScript.toHex(), spendSimulation.unlockingScript.toHex());
+    handleStartSimulation(spendSimulation);
     // The stacks will be updated when the new simulation is created
   };
 
@@ -127,7 +114,7 @@ export const ScriptExecutionVisualizer: React.FC = () => {
 
     try {
       advanceSimulation(spendSimulation, currentHighlightRange, isSimulationOver);
-      setSimulationStepsTaken(simulationStepsTaken + 1);    
+      setSimulationStepsTaken(prev => prev + 1);
     } catch (e) {
       // only interested in the error message description returned by spend.step(), which is before the "TXID" string
       const end = (e as Error).message.indexOf("TXID")
@@ -144,7 +131,7 @@ export const ScriptExecutionVisualizer: React.FC = () => {
       if: [...spendSimulation.ifStack]
     });
     setScriptHighlightRange(currentHighlightRange);
-  }, [spendSimulation, scriptHighlightRange, simulationStepsTaken]);
+  }, [spendSimulation, scriptHighlightRange]);
 
   const handleAdvanceManySteps = useCallback((stepsToTake: number) => {
     if (spendSimulation === null) return;
@@ -168,7 +155,7 @@ export const ScriptExecutionVisualizer: React.FC = () => {
     }
 
     // Do rerendering
-    setSimulationStepsTaken(simulationStepsTaken + stepsTaken);
+    setSimulationStepsTaken(prev => prev + stepsTaken);
     if (isSimulationOver.status) { setIsSimulationRunning(false); }
     setStacks({
       main: [...spendSimulation.stack],
@@ -176,7 +163,7 @@ export const ScriptExecutionVisualizer: React.FC = () => {
       if: [...spendSimulation.ifStack]
     });
     setScriptHighlightRange(currentHighlightRange);
-  }, [spendSimulation, scriptHighlightRange, simulationStepsTaken]);
+  }, [spendSimulation, scriptHighlightRange]);
 
   const handleAdvanceToNextComputation = useCallback(() => {
     if (spendSimulation === null) return;
@@ -205,7 +192,7 @@ export const ScriptExecutionVisualizer: React.FC = () => {
     }
 
     // Do rerendering
-    setSimulationStepsTaken(simulationStepsTaken + stepsTaken);
+    setSimulationStepsTaken(prev => prev + stepsTaken);
     if (isSimulationOver.status) { setIsSimulationRunning(false); }
     setStacks({
       main: [...spendSimulation.stack],
@@ -213,29 +200,31 @@ export const ScriptExecutionVisualizer: React.FC = () => {
       if: [...spendSimulation.ifStack]
     });
     setScriptHighlightRange(currentHighlightRange);
-  }, [spendSimulation, scriptHighlightRange, simulationStepsTaken]);
+  }, [spendSimulation, scriptHighlightRange]);
 
   const handleRevertOneStep = useCallback(() => {
     if (spendSimulation === null) return;
     if (simulationStepsTaken <= 0) return;
 
-    const newSpendSimulation = new Spend({
-      sourceTXID: "mockTxID",
-      sourceOutputIndex: 0,
-      sourceSatoshis: 0,
-      lockingScript: Script.fromHex(spendSimulation.lockingScript.toHex()) as LockingScript,
-      transactionVersion: 0,
-      otherInputs: [],
-      outputs: [],
-      unlockingScript: Script.fromHex(spendSimulation.unlockingScript.toHex()) as UnlockingScript,
-      inputSequence: 0,
-      inputIndex: 0,
-      lockTime: 0
-    })
+    spendSimulation.reset();
+
+    // const newSpendSimulation = new Spend({
+    //   sourceTXID: "mockTxID",
+    //   sourceOutputIndex: 0,
+    //   sourceSatoshis: 0,
+    //   lockingScript: Script.fromHex(spendSimulation.lockingScript.toHex()) as LockingScript,
+    //   transactionVersion: 0,
+    //   otherInputs: [],
+    //   outputs: [],
+    //   unlockingScript: Script.fromHex(spendSimulation.unlockingScript.toHex()) as UnlockingScript,
+    //   inputSequence: 0,
+    //   inputIndex: 0,
+    //   lockTime: 0
+    // })
 
     let stepsToTake = simulationStepsTaken - 1;
     let currentHighlightRange;
-    const firstOperation = newSpendSimulation.unlockingScript.chunks[0]
+    const firstOperation = spendSimulation.unlockingScript.chunks[0]
     if (firstOperation.data) {
       currentHighlightRange = {start: 0, end: minBytesNeededToPushDataOfLength(firstOperation.data.length) * 2}; // each byte is 2 characters long in hex string
     } else {
@@ -245,7 +234,7 @@ export const ScriptExecutionVisualizer: React.FC = () => {
     let stepsTaken = 0;
     try {
       for (let i = 0; i < stepsToTake; i++) {
-        advanceSimulation(newSpendSimulation, currentHighlightRange, isSimulationOver);
+        advanceSimulation(spendSimulation, currentHighlightRange, isSimulationOver);
         stepsTaken++;
         if (isSimulationOver.status) {
           break;
@@ -258,13 +247,13 @@ export const ScriptExecutionVisualizer: React.FC = () => {
     }
 
     // Do rerendering
-    setSpendSimulation(newSpendSimulation);
+    setSpendSimulation(spendSimulation);
     setSimulationStepsTaken(stepsTaken);
     setIsSimulationRunning(!isSimulationOver.status);
     setStacks({
-      main: [...newSpendSimulation.stack],
-      alt: [...newSpendSimulation.altStack],
-      if: [...newSpendSimulation.ifStack]
+      main: [...spendSimulation.stack],
+      alt: [...spendSimulation.altStack],
+      if: [...spendSimulation.ifStack]
     });
     setScriptHighlightRange(currentHighlightRange);
     setSimulationError("");
@@ -406,7 +395,8 @@ export const ScriptExecutionVisualizer: React.FC = () => {
           }}
         >
           <button onClick={handleAdvanceOneStep} style={{ marginRight: '10px' }} disabled={!isSimulationRunning}>Advance 1 Step</button>
-          <button onClick={() => handleAdvanceManySteps(multipleStepCount)} style={{ marginRight: '10px' }} disabled={!isSimulationRunning}>Advance {multipleStepCount} Steps</button>
+          <button onClick={() => handleAdvanceManySteps(mediumStepCount)} style={{ marginRight: '10px' }} disabled={!isSimulationRunning}>Advance {mediumStepCount} Steps</button>
+          <button onClick={() => handleAdvanceManySteps(largeStepCount)} style={{ marginRight: '10px' }} disabled={!isSimulationRunning}>Advance {largeStepCount} Steps</button>
           <button onClick={handleAdvanceToNextComputation} style={{ marginRight: '10px' }} disabled={!isSimulationRunning}>Advance to the Next Computation</button>
           <button onClick={handleRevertOneStep} style={{ marginRight: '10px' }} >Revert 1 Step</button>
           <button onClick={handleResetSimulation}>Reset Simulation</button>
