@@ -8,6 +8,7 @@ import BUMPVisualizer from './hexVisualizers/BUMPVisualizer';
 import RawTxVisualizer from './hexVisualizers/rawTxVisualizer';
 import ScriptVisualizer from './hexVisualizers/scriptVisualizer';
 import NotFound from './NotFound';
+import ASMtoHexConverter from './hexVisualizers/ASMtoHex';
 
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
@@ -17,6 +18,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           <Route path="/" element={<ScriptExecutionVisualizer />} />
           <Route path="/HexToJson" element={
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: "center", justifyContent: 'center' }}>
+              <ASMtoHexConverter />
               <BEEFVisualizer />
               <BUMPVisualizer />
               <RawTxVisualizer />
