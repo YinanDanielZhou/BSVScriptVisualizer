@@ -159,7 +159,7 @@ export const ScriptsInputPanel: React.FC<ScriptsInputPanelProps> = ({
                 const newSpendSimulation = new Spend({
                       sourceTXID: sourceTXID,
                       sourceOutputIndex: sourceOutputIndex,
-                      sourceSatoshis: 1,   // this need to be changed to the correct value for ChECKSIG to work
+                      sourceSatoshis: 1,   //TODO: this need to be changed to the correct value for ChECKSIG to work
                       lockingScript: LockingScript.fromHex(lockingScriptHex),
                       transactionVersion: tx.version,
                       otherInputs: tx.inputs.slice(0, inputIndex).concat(tx.inputs.slice(inputIndex + 1)),
@@ -175,6 +175,7 @@ export const ScriptsInputPanel: React.FC<ScriptsInputPanelProps> = ({
                   newSpendSimulation.reset()
                 } catch {
                   console.error("failed to validate")
+                  console.log("WARNING: input being spent should have exactly 1 satshis for CHECKSIG to work, given the current hard-coded implementation.")
                 }
                 setLockingScriptHex(newSpendSimulation.lockingScript.toHex())
                 setUnlockingScriptHex(newSpendSimulation.unlockingScript.toHex())
