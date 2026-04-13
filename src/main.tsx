@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import { HashRouter as Router, Routes, Route, Link } from "react-router-dom";
 
 import { ScriptExecutionVisualizer } from './spendSimulation/ScriptExecutionVisualizer';
 import BEEFVisualizer from './hexVisualizers/BEEFVisualizer';
@@ -13,7 +13,7 @@ import ASMtoHexConverter from './hexVisualizers/ASMtoHex';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <Router basename="/BSVScriptVisualizer">
+    <Router>
         <Routes>
           <Route path="/" element={<ScriptExecutionVisualizer />} />
           <Route path="/HexToJson" element={
